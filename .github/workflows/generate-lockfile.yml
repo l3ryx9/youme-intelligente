@@ -3,17 +3,22 @@ name: Generate yarn.lock
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   generate-lockfile:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20.19.4"
+          node-version: "22.13.0"
 
       - name: Install Yarn
         run: npm install -g yarn@1.22.22
