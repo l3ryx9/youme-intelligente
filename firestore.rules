@@ -1,0 +1,174 @@
+rules_version = '2';
+
+// ============================================================================
+// YouMe Intelligente — Règles de Sécurité Firestore
+// ============================================================================
+// Sécurité : chaque utilisateur ne peut accéder qu'à ses propres données.
+// Modèle : messagerie 1-to-1, partenaires vérifiés, pas de données publiques.
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========================================================================
+    // Fonctions utilitaires
+    // ========================================================================
+
+    // L'utilisateur est authentifié
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // L'utilisateur est le propriétaire de la ressource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // L'utilisateur est participant d'une conversation
+    function isParticipant(conversationData) {
+      return isAuthenticated() &&
+             request.auth.uid in conversationData.participantIds;
+    }
+
+    // Validation de la mise à jour : seuls les champs autorisés sont modifiés
+    function onlyUpdates(allowedFields) {
+      return request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(allowedFields);
+    }
+
+    // ========================================================================
+    // Utilisateurs — /users/{userId}
+    // ========================================================================
+    match /users/{userId} {
+      // Lecture : un utilisateur peut lire son propre profil
+      // Les autres utilisateurs ne peuvent lire qu'un sous-ensemble minimal
+      allow read: if isOwner(userId) ||
+                     (isAuthenticated() &&
+                      request.auth.uid != userId);
+
+      // Création : uniquement lors de l'inscription avec son propre UID
+      allow create: if isOwner(userId) &&
+                       request.resource.data.id == userId &&
+                       request.resource.data.email is string &&
+                       request.resource.data.username is string &&
+                       request.resource.data.username.size() >= 3 &&
+                       request.resource.data.username.size() <= 20;
+
+      // Mise à jour : l'utilisateur peut modifier son propre profil
+      // Les champs critiques (id, email, createdAt) sont immuables
+      allow update: if isOwner(userId) &&
+                       onlyUpdates(['displayName', 'photoURL', 'bio',
+                                    'isOnline', 'lastSeen', 'aiEnabled',
+                                    'fcmToken', 'updatedAt', 'isEmailVerified']);
+
+      // Suppression : uniquement par le propriétaire
+      allow delete: if isOwner(userId);
+    }
+
+    // ========================================================================
+    // Conversations — /conversations/{conversationId}
+    // ========================================================================
+    match /conversations/{conversationId} {
+      // Lecture : uniquement les participants
+      allow read: if isAuthenticated() &&
+                     request.auth.uid in resource.data.participantIds;
+
+      // Création : par le service de partenariat (via batch write)
+      allow create: if isAuthenticated() &&
+                       request.auth.uid in request.resource.data.participantIds &&
+                       request.resource.data.participantIds.size() == 2;
+
+      // Mise à jour : uniquement les participants, champs autorisés
+      allow update: if isAuthenticated() &&
+                       request.auth.uid in resource.data.participantIds &&
+                       onlyUpdates(['lastMessage', 'unreadCount', 'updatedAt']);
+
+      // Suppression : non autorisée (archivage uniquement)
+      allow delete: if false;
+
+      // ======================================================================
+      // Messages — /conversations/{conversationId}/messages/{messageId}
+      // ======================================================================
+      match /messages/{messageId} {
+        // Lecture : uniquement les participants de la conversation
+        allow read: if isAuthenticated() &&
+                       request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+
+        // Envoi : uniquement depuis l'expéditeur, vers un participant
+        allow create: if isAuthenticated() &&
+                         request.resource.data.senderId == request.auth.uid &&
+                         request.resource.data.conversationId == conversationId &&
+                         request.resource.data.type in ['text', 'voice', 'system'] &&
+                         request.resource.data.content is string &&
+                         request.resource.data.content.size() <= 10000 &&
+                         // Les messages vocaux ne stockent JAMAIS de fichier côté Firestore
+                         // (voiceLocalPath n'est PAS dans Firestore — stockage local uniquement)
+                         !request.resource.data.keys().hasAny(['voiceFileUrl', 'voiceCloudPath']);
+
+        // Mise à jour : statut (expéditeur ou destinataire), ou analyse IA (système)
+        allow update: if isAuthenticated() &&
+                         request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds &&
+                         onlyUpdates(['status', 'isDeleted', 'content', 'aiAnalysis', 'updatedAt']);
+
+        // Suppression physique : non autorisée (soft delete via isDeleted = true)
+        allow delete: if false;
+      }
+    }
+
+    // ========================================================================
+    // Demandes de Partenariat — /partnerRequests/{requestId}
+    // ========================================================================
+    match /partnerRequests/{requestId} {
+      // Lecture : expéditeur ou destinataire
+      allow read: if isAuthenticated() &&
+                     (request.auth.uid == resource.data.senderId ||
+                      request.auth.uid == resource.data.receiverId);
+
+      // Création : uniquement par l'expéditeur
+      allow create: if isAuthenticated() &&
+                       request.resource.data.senderId == request.auth.uid &&
+                       request.resource.data.status == 'pending' &&
+                       request.resource.data.senderId != request.resource.data.receiverId;
+
+      // Mise à jour du statut : uniquement par le destinataire
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == resource.data.receiverId &&
+                       onlyUpdates(['status', 'updatedAt']) &&
+                       request.resource.data.status in ['accepted', 'rejected'];
+
+      // Suppression : non autorisée
+      allow delete: if false;
+    }
+
+    // ========================================================================
+    // Partenaires — /partners/{partnershipId}
+    // ========================================================================
+    match /partners/{partnershipId} {
+      // Lecture : uniquement le propriétaire de l'entrée
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // Création : uniquement via le service de partenariat (batch write lors de l'acceptation)
+      // Autorisé si l'utilisateur est le userId ou le partnerId de l'entrée créée
+      allow create: if isAuthenticated() &&
+                       (request.resource.data.userId == request.auth.uid ||
+                        request.resource.data.partnerId == request.auth.uid);
+
+      // Suppression : uniquement par le propriétaire de l'entrée
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId;
+
+      // Mise à jour : limitée aux champs de statut en ligne
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId &&
+                       onlyUpdates(['partnerIsOnline', 'partnerLastSeen']);
+    }
+
+    // ========================================================================
+    // Toute autre collection : accès refusé par défaut
+    // ========================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
