@@ -38,12 +38,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      [
-        "expo-notifications",
-        {
-          "color": "#00A884"
-        }
-      ],
+      "expo-notifications",
       [
         "expo-av",
         {
