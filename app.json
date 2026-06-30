@@ -45,7 +45,15 @@
           "microphonePermission": "Autoriser YouMe à accéder au microphone pour enregistrer des messages vocaux."
         }
       ],
-      "@react-native-firebase/app"
+      "@react-native-firebase/app",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
