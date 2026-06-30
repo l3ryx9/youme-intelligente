@@ -80,7 +80,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <PaperProvider theme={theme}>
-          <StatusBar style="light" backgroundColor="#111B21" />
+          <StatusBar style="light" backgroundColor="#14101F" />
           <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
