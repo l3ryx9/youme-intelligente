@@ -6,31 +6,35 @@ import { MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
 import type { MD3Theme } from 'react-native-paper';
 
 export const YOUME_COLORS = {
-  // Couleurs principales WhatsApp-like
-  primary: '#00A884',       // Vert WhatsApp
-  primaryDark: '#008f6f',
-  primaryLight: '#25D366',
-  secondary: '#202C33',     // Header sombre
-  background: '#111B21',    // Fond principal sombre
-  surface: '#1F2C34',       // Surfaces de cartes
-  surfaceVariant: '#2A3942', // Surfaces secondaires
+  // Couleurs principales — dégradé du logo YouMe (bleu → violet → rose)
+  gradientStart: '#1B80FB',  // Bleu (logo)
+  gradientMid: '#A347C8',    // Violet (logo)
+  gradientEnd: '#FD46A5',    // Rose (logo)
+
+  primary: '#A347C8',        // Violet — couleur d'accent principale
+  primaryDark: '#7B2FF0',
+  primaryLight: '#FD46A5',
+  secondary: '#241B3A',      // Header sombre teinté violet
+  background: '#14101F',     // Fond principal sombre (violet très foncé)
+  surface: '#1F1730',        // Surfaces de cartes
+  surfaceVariant: '#2C2240', // Surfaces secondaires
 
   // Bulles de chat
-  bubbleOwn: '#005C4B',     // Ma bulle (vert foncé)
-  bubbleOther: '#1F2C34',   // Bulle de l'autre (gris foncé)
-  bubbleOwnText: '#E9EDEF',
-  bubbleOtherText: '#E9EDEF',
+  bubbleOwn: '#5A2D8C',      // Ma bulle (violet foncé)
+  bubbleOther: '#1F1730',    // Bulle de l'autre
+  bubbleOwnText: '#F2EAFB',
+  bubbleOtherText: '#F2EAFB',
 
   // Textes
-  textPrimary: '#E9EDEF',
-  textSecondary: '#8696A0',
-  textMuted: '#667781',
-  textLink: '#53BDEB',
+  textPrimary: '#F2EAFB',
+  textSecondary: '#A99BC2',
+  textMuted: '#7A6B95',
+  textLink: '#FD46A5',
 
   // États & feedback
   online: '#25D366',
   delivered: '#53BDEB',
-  read: '#53BDEB',
+  read: '#FD46A5',
   error: '#F15C6D',
   warning: '#FFB04C',
   success: '#25D366',
@@ -49,17 +53,17 @@ export const YOUME_COLORS = {
   coherenceLow: '#F15C6D',
 
   // Interface
-  divider: '#2A3942',
-  inputBackground: '#2A3942',
-  placeholder: '#667781',
-  badge: '#00A884',
+  divider: '#2C2240',
+  inputBackground: '#2C2240',
+  placeholder: '#7A6B95',
+  badge: '#FD46A5',
 
   // Light mode (optionnel)
-  lightBackground: '#F0F2F5',
+  lightBackground: '#F6F0FB',
   lightSurface: '#FFFFFF',
-  lightBubbleOwn: '#D9FDD3',
+  lightBubbleOwn: '#F0DDFB',
   lightBubbleOther: '#FFFFFF',
-  lightTextPrimary: '#111B21',
+  lightTextPrimary: '#241B3A',
 } as const;
 
 export const YOUME_DARK_THEME: MD3Theme = {
@@ -70,6 +74,7 @@ export const YOUME_DARK_THEME: MD3Theme = {
     onPrimary: '#FFFFFF',
     primaryContainer: YOUME_COLORS.primaryDark,
     secondary: YOUME_COLORS.secondary,
+    tertiary: YOUME_COLORS.gradientStart,
     background: YOUME_COLORS.background,
     surface: YOUME_COLORS.surface,
     surfaceVariant: YOUME_COLORS.surfaceVariant,
@@ -85,6 +90,10 @@ export const YOUME_LIGHT_THEME: MD3Theme = {
   colors: {
     ...MD3LightTheme.colors,
     primary: YOUME_COLORS.primary,
+    onPrimary: '#FFFFFF',
+    primaryContainer: YOUME_COLORS.lightBubbleOwn,
+    secondary: YOUME_COLORS.gradientEnd,
+    tertiary: YOUME_COLORS.gradientStart,
     background: YOUME_COLORS.lightBackground,
     surface: YOUME_COLORS.lightSurface,
   },
