@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "956582659104",
+    "project_id": "youme91",
+    "storage_bucket": "youme91.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:956582659104:android:245224a74c3891411ba845",
+        "android_client_info": {
+          "package_name": "com.youme.intelligente"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDcvbvKddbIw-d6DBCbnod_oXPcApBBxKk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
