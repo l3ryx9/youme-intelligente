@@ -25,15 +25,25 @@ export function useAuth() {
     async (data: RegisterFormData): Promise<void> => {
       setLoading(true);
       clearError();
+
+      let authUid: string | null = null;
+
       try {
+        // 1. Créer le compte Firebase Auth en premier
+        //    (l'utilisateur est maintenant authentifié → les règles Firestore s'appliquent)
+        const authResult = await authService.register(data.email, data.password);
+        authUid = authResult.uid;
+
+        // 2. Vérifier la disponibilité du username (maintenant authentifié ✓)
         const isAvailable = await userRepository.isUsernameAvailable(data.username);
         if (!isAvailable) {
+          // Supprimer le compte Auth créé pour ne pas laisser de compte orphelin
+          await authService.deleteCurrentUser();
           throw new Error('Ce username est déjà utilisé. Choisissez-en un autre.');
         }
 
-        const authResult = await authService.register(data.email, data.password);
-
-        const newUser = await (userRepository as any).createUser({
+        // 3. Créer le profil Firestore
+        const newUser = await userRepository.createUser({
           id: authResult.uid,
           email: data.email,
           username: data.username,
@@ -42,6 +52,10 @@ export function useAuth() {
 
         setUser(newUser);
       } catch (err: any) {
+        // Si le profil Firestore échoue après la création Auth → nettoyer le compte Auth
+        if (authUid) {
+          try { await authService.deleteCurrentUser(); } catch (_) {}
+        }
         setError(err.message ?? 'Erreur lors de l\'inscription');
         throw err;
       } finally {
