@@ -65,6 +65,18 @@ export class AuthService {
   }
 
   /**
+   * Supprime le compte Auth de l'utilisateur courant (sans réauthentification).
+   * Utilisé en cas d'échec lors de l'inscription (username déjà pris, etc.)
+   * pour éviter de laisser un compte Auth orphelin sans profil Firestore.
+   */
+  async deleteCurrentUser(): Promise<void> {
+    const user = auth.currentUser;
+    if (user) {
+      await deleteUser(user);
+    }
+  }
+
+  /**
    * Envoie un email de réinitialisation de mot de passe.
    */
   async sendPasswordReset(email: string): Promise<void> {
